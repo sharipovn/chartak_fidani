@@ -1,0 +1,89 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chartak Fidani - {% block title %}{% endblock title %}</title>
+  <link rel="icon" href="{% static 'images/logo.jpg' %}" type="image/png">
+  <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'fontawesome/css/all.min.css' %}">
+  {% block extra_css %}{% endblock extra_css %}
+<style>
+  html, body {
+    height: 100%;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+  main {
+    flex: 1; /* asosiy content bo‘sh joyni egallaydi */
+  }
+</style>
+
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom">
+    <div class="container-fluid">
+      <!-- Brand: bosh sahifaga -->
+        {% if user.is_authenticated %}
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
+                <img src="{% static 'images/logo.jpg' %}" alt="Logo" width="32" height="32" class="me-2 rounded-circle">
+                <span>Chartak Fidani</span>
+            </a>
+            {% else %}
+            <span class="navbar-brand d-flex align-items-center">
+                <img src="{% static 'images/logo.jpg' %}" alt="Logo" width="32" height="32" class="me-2 rounded-circle">
+                <span>Chartak Fidani</span>
+            </span>
+        {% endif %}
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+        
+      <div class="collapse navbar-collapse" id="mainNav">
+        {% if user.is_authenticated %}
+        
+       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+            <a class="nav-link{% if request.resolver_match.url_name == 'products_list' %} active{% endif %}" href="{% url 'products_list' %}">
+            <i class="fa-solid fa-box-open me-1"></i> Mahsulotlar
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link{% if request.resolver_match.url_name == 'history' %} active{% endif %}" href="{% url 'history' %}">
+            <i class="fa-solid fa-clock-rotate-left me-1"></i> Istoriya
+            </a>
+        </li>
+        </ul>
+
+        
+        <ul class="navbar-nav">
+            <li class="nav-item">
+              <span class="navbar-text me-3"><i class="fa-solid fa-user"></i> {{ user.get_username }}</span>
+            </li>
+            <li class="nav-item">
+              <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}?next={{ request.get_full_path|urlencode }}">Chiqish</a>
+            </li>
+          
+        </ul>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <main class="container mt-4">
+    {% block content %}{% endblock content %}
+  </main>
+
+  <footer class="text-center py-1 border-top border-muted text-muted">
+    <small>&copy;Toshkent-2025, Chartak Fidani</small>
+  </footer>
+
+  <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+  {% block extra_js %}{% endblock extra_js %}
+</body>
+</html>

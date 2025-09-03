@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Mahsulotlar{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+  <h4 class="mb-0 d-flex  align-items-center">
+    <i class="fa-solid fa-box-open me-2"></i>Mahsulotlar
+    <span class="badge bg-secondary ms-2">{{ total_count }}</span>
+  </h4>
+
+  <div class="d-flex align-items-center gap-2">
+    <form class="d-flex" role="search" method="get" action="">
+      <input class="form-control me-2" type="search" name="q" placeholder="Nomi yoki kodi..." value="{{ q }}">
+      <button class="btn btn-outline-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+      {% if q %}
+        <a class="btn btn-outline-secondary ms-2" href="{% url 'products_list' %}"><i class="fa-solid fa-xmark"></i></a>
+      {% endif %}
+    </form>
+
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProductModal">
+      <i class="fa-solid fa-plus"></i> Yangi mahsulot
+    </button>
+  </div>
+</div>
+
+{% if messages %}
+  {% for m in messages %}
+    <div class="alert alert-{{ m.tags }} py-2 mb-3">{{ m }}</div>
+  {% endfor %}
+{% endif %}
+
+<!-- Scrollable table wrapper -->
+<div class="border rounded">
+  <div class="table-responsive" style="max-height:60vh; overflow:auto;">
+    <table class="table table-bordered table-striped table-hover align-middle mb-0">
+      <thead class="table-primary" style="position: sticky; top: 0; z-index: 1;">
+        <tr>
+          <th style="width:60px">#</th>
+          <th style="min-width:120px">Kod</th>
+          <th style="min-width:220px">Nomi</th>
+          <th style="min-width:140px">Kirish narxi</th>
+          <th style="min-width:140px">Sotish narxi</th>
+          <th style="min-width:160px">Kim qo'shdi</th>
+          <th style="min-width:160px">Qo'shilgan</th>
+          <th style="min-width:160px">Yangilangan</th>
+          <th style="min-width:120px">Harakatlar</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in page_obj.object_list %}
+        <tr>
+          <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+          <td><code>{{ p.meat_code }}</code></td>
+          <td>{{ p.meat_name }}</td>
+          <td>{{ p.meat_in_price|intcomma }}</td>
+          <td>{{ p.meat_sell_price|intcomma }}</td>
+          <td>{{ p.create_user.username }}</td>
+          <td>{{ p.created_at|date:"Y-m-d H:i" }}</td>
+          <td>{{ p.updated_at|date:"Y-m-d H:i" }}</td>
+          <td>
+            {% if request.user == p.create_user %}
+                <!-- Edit tugma -->
+                <button class="btn btn-sm btn-outline-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#editProductModal{{ p.id }}"
+                        title="Tahrirlash">
+                <i class="fa-regular fa-pen-to-square"></i>
+                </button>
+                <!-- History tugma -->
+                <button class="btn btn-sm btn-outline-secondary ms-1"
+                        data-bs-toggle="modal"
+                        data-bs-target="#historyProductModal{{ p.id }}"
+                        title="Tarixni ko‘rish">
+                <i class="fa-regular fa-eye"></i>
+                </button>
+            {% else %}
+                <span class="text-muted small">—</span>
+            {% endif %}
+            </td>
+
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" class="text-center text-muted">Mahsulotlar yo‘q.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination -->
+<nav class="mt-3" aria-label="Sahifalash">
+  <ul class="pagination mb-0">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?{% if q %}q={{ q|urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">Oldingi</a></li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Oldingi</span></li>
+    {% endif %}
+
+    <li class="page-item disabled">
+      <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    </li>
+
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?{% if q %}q={{ q|urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">Keyingi</a></li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Keyingi</span></li>
+    {% endif %}
+  </ul>
+</nav>
+
+<!-- Create Product Modal -->
+<div class="modal fade" id="createProductModal" tabindex="-1" aria-labelledby="createProductLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title" id="createProductLabel"><i class="fa-solid fa-plus me-2"></i>Yangi mahsulot qo‘shish</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Yopish"></button>
+      </div>
+      <form method="post" action="{% url 'product_create' %}">
+        <div class="modal-body">
+          {% csrf_token %}
+          <div class="mb-3"><label class="form-label">Kod</label>{{ form.meat_code }}</div>
+          <div class="mb-3"><label class="form-label">Nomi</label>{{ form.meat_name }}</div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label">Kirish narxi</label>{{ form.meat_in_price }}</div>
+            <div class="col-md-6 mb-3"><label class="form-label">Sotish narxi</label>{{ form.meat_sell_price }}</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+          <button type="submit" class="btn btn-primary">Saqlash</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit & History Modals (jadvaldan tashqarida) -->
+{% for p in page_obj.object_list %}
+  <!-- Edit Modal -->
+  <div class="modal fade" id="editProductModal{{ p.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa-regular fa-pen-to-square me-2"></i>Mahsulotni tahrirlash</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form method="post" action="{% url 'product_update' p.id %}">
+          <div class="modal-body">
+            {% csrf_token %}
+            <div class="mb-3"><label class="form-label">Kod</label>
+              <input type="text" name="meat_code" class="form-control" value="{{ p.meat_code }}" required>
+            </div>
+            <div class="mb-3"><label class="form-label">Nomi</label>
+              <input type="text" name="meat_name" class="form-control" value="{{ p.meat_name }}" required>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3"><label class="form-label">Kirish narxi</label>
+                <input type="number" step="0.01" name="meat_in_price" class="form-control" value="{{ p.meat_in_price }}">
+              </div>
+              <div class="col-md-6 mb-3"><label class="form-label">Sotish narxi</label>
+                <input type="number" step="0.01" name="meat_sell_price" class="form-control" value="{{ p.meat_sell_price }}">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+            <button type="submit" class="btn btn-primary">Saqlash</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Modal -->
+  <div class="modal fade" id="historyProductModal{{ p.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa-regular fa-eye me-2"></i>Tarix: {{ p.meat_name }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive" style="max-height:60vh; overflow:auto;">
+            <table class="table table-bordered table-striped mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Sana/Vaqt</th>
+                  <th>Amaliyot</th>
+                  <th>Foydalanuvchi</th>
+                  <th>Nomi</th>
+                  <th>Kirish narxi</th>
+                  <th>Sotish narxi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for h in p.history.all|slice:":30" %}
+                <tr>
+                  <td>{{ h.history_date|date:"Y-m-d H:i" }}</td>
+                  <td>
+                    {% if h.history_type == '+' %}<span class="badge bg-success">Yaratildi</span>
+                    {% elif h.history_type == '~' or h.history_type == '∼' %}<span class="badge bg-warning text-dark">O‘zgartirildi</span>
+                    {% elif h.history_type == '-' %}<span class="badge bg-danger">O‘chirildi</span>
+                    {% else %}<span class="badge bg-secondary">Noma’lum</span>{% endif %}
+                  </td>
+                  <td>{{ h.history_user.username|default:"—" }}</td>
+                  <td>{{ h.meat_name }}</td>
+                  <td>{{ h.meat_in_price|intcomma }}</td>
+                  <td>{{ h.meat_sell_price|intcomma }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted">Tarix yo‘q</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Yopish</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+{% endblock %}
