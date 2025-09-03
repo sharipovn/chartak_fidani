@@ -10,4 +10,8 @@ urlpatterns = [
     path("products/history/", views.products_list, name="history"),
     path("", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
+    
+        # IncomeSale CRUD
+    path("income-sale/create/", views.income_sale_create, name="income_sale_create"),
+    path("income-sale/<int:pk>/update/", views.income_sale_update, name="income_sale_update"),
 ]

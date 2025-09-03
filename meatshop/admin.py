@@ -9,9 +9,19 @@ class ProductAdmin(SimpleHistoryAdmin):
 
 @admin.register(IncomeSale)
 class IncomeSaleAdmin(admin.ModelAdmin):
-    list_display = ('action_type', 'meat', 'quantity', 'quantity_unit', 'in_price', 'sell_price',
-                    'total_in_price', 'total_sell_price', 'operation_date', 'create_user')
-    list_filter = ('action_type', 'quantity_unit', 'operation_date')
-    search_fields = ('meat__meat_name', 'meat__meat_code', 'create_user__username')
-    autocomplete_fields = ('meat',)
-    date_hierarchy = 'operation_date'
+    list_display = [
+        "id",
+        "meat",
+        "action_type",
+        "quantity",
+        "quantity_unit",
+        "in_price",
+        "sell_price",
+        "total_in_price",
+        "total_sell_price",
+        "operation_date",
+        "is_perexod",
+    ]
+    list_filter = ["action_type", "quantity_unit", "is_perexod"]
+    search_fields = ["meat__meat_name", "meat__meat_code"]
+
