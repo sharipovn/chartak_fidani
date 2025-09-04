@@ -14,6 +14,15 @@
     <i class="fa-solid fa-plus"></i> Kirim/Sotuv
   </button>
 </div>
+{% if messages %}
+  {% for m in messages %}
+    <div class="alert alert-info d-flex align-items-center py-2 mb-3">
+      <i class="fa-solid fa-circle-info me-2"></i>
+      <div>{{ m }}</div>
+    </div>
+  {% endfor %}
+{% endif %}
+
 
 <!-- Filters -->
 <form method="get" class="row g-2 mb-3">
@@ -33,49 +42,68 @@
 
 <!-- IncomeSale table -->
 <div class="border rounded">
-  <div class="table-responsive" style="max-height:60vh; overflow:auto;">
-    <table class="table table-bordered table-hover table-striped align-middle mb-0">
-      <thead class="table-primary" style="position: sticky; top:0; z-index:1;">
+  <div class="table-responsive tiny-scrollbar" style="max-height:60vh; overflow:auto;">
+    <table class="table table-bordered border-secondary-emhasis table-hover table-striped align-middle mb-0">
+      <thead class=" text-center table-primary text-uppercase text-nowrap" style="position: sticky; top:0; z-index:1;">
         <tr>
-          <th>#</th>
-          <th>Markasi</th>
-          <th>Nomi</th>
-          <th>Harakat</th>
-          <th>Miqdor</th>
-          <th>Birlik</th>
-          <th>Kirim/Sotuv Sanasi</th>
-          <th>Jami Kirim Narxi</th>
-          <th>Jami Sotuv Narxi</th>
-          <th>Qayerdan</th>
-          <th>Qayerga</th>
-          <th>Bajardi</th>
-          <th>Bajargan Vaqti</th>
-          <th>O'zgartirildi</th>
-          <th>Harakatlar</th>
+          <th >№</th>
+          <th scope="col">Markasi</th>
+          <th scope="col">Nomi</th>
+          <th scope="col">Harakat</th>
+          
+          
+          <th scope="col">Kirim/Sotuv Sanasi</th>
+          <th scope="col">Kirim Narxi</th>
+          <th scope="col">Sotuv Narxi</th>
+
+          <th scope="col">Miqdor</th>
+          <th scope="col">Birlik</th>
+          
+          <th scope="col">Jami Kirim Narxi</th>
+          <th scope="col">Jami Sotuv Narxi</th>
+
+          <th scope="col">Qayerdan</th>
+          <th scope="col">Qayerga</th>
+          <th scope="col">Bajardi</th>
+          <th scope="col">Bajargan Vaqti</th>
+          <th scope="col">O'zgartirildi</th>
+          <th scope="col">Harakatlar</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody class="text-center center-align text-nowrap" style="font-size:15px;">
+        
         {% for row in page_obj %}
         <tr>
-          <td class="text-primary-emphasis">{{ forloop.counter0|add:page_obj.start_index }}</td>
+          <td class="text-primary-emphasis ">{{ forloop.counter0|add:page_obj.start_index }}</td>
           <td class="text-primary-emphasis">{{ row.meat.meat_code }}</td>
           <td class="text-primary-emphasis">{{ row.meat.meat_name }} </td>
           <td class="text-primary-emphasis">{{ row.action_type }}</td>
-          <td class="text-primary-emphasis">{{ row.quantity|intcomma }}</td>
-          <td class="text-primary-emphasis">{{ row.quantity_unit }}</td>
+          
           <td class="text-primary-emphasis">{{ row.operation_date|date:"Y-m-d" }}</td>
+
+          <td class="text-primary-emphasis">{{ row.in_price|intcomma }}</td>
+          <td class="text-primary-emphasis">{{ row.sell_price|intcomma }}</td>
+
+          <td class="text-primary-emphasis">{{ row.quantity|intcomma }}</td>
+          <td class="text-success">{{ row.quantity_unit }}</td>
+          
           <td class="text-primary-emphasis">{{ row.total_in_price|intcomma }}</td>
           <td class="text-primary-emphasis">{{ row.total_sell_price|intcomma }}</td>
           <td class="text-primary-emphasis">{{ row.from_where}}</td>
           <td class="text-primary-emphasis">{{ row.to_where}}</td>
           <td class="text-primary-emphasis">{{ row.create_user.username}}</td>
-          <td class="text-primary-emphasis">{{ row.created_at|date:"Y-m-d H:i" }}</td>
+          <td class="text-primary-emphasi">{{ row.created_at|date:"Y-m-d H:i" }}</td>
           <td class="text-primary-emphasis">{{ row.updated_at|date:"Y-m-d H:i" }}</td>
           <td>
-            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editIncomeSaleModal{{ row.id }}">
-              <i class="fa-regular fa-pen-to-square"></i>
-            </button>
+            {% if row.create_user == request.user or request.user.is_superuser %}
+              <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editIncomeSaleModal{{ row.id }}">
+                <i class="fa-regular fa-pen-to-square"></i>
+              </button>
+            {% else %}
+              <span class="text-muted small">—</span>
+            {% endif %}
           </td>
+
         </tr>
         {% empty %}
         <tr><td colspan="8" class="text-center text-muted">Hech qanday yozuv yo‘q</td></tr>
@@ -152,25 +180,28 @@
 
 <!-- Edit modals -->
 {% for row in page_obj %}
-<div class="modal fade" id="editIncomeSaleModal{{ row.id }}" tabindex="-1">
+<div class="modal fade" id="editIncomeSaleModal{{ row.id }}">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fa-regular fa-pen-to-square me-2"></i>IncomeSale tahrirlash</h5>
+        <h5 class="modal-title">
+          <i class="fa-regular fa-pen-to-square me-2"></i>Kirim/Chiqim Tahrirlash
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="post" action="{% url 'income_sale_update' row.id %}">
+        {% csrf_token %}
         <div class="modal-body">
-          {% csrf_token %}
-          {{ form.non_field_errors }}
           <div class="mb-3">
             <label class="form-label">Mahsulot</label>
-            <input type="text" class="form-control" value="{{ row.meat }}" disabled>
+            <input type="text" class="form-control" value="{{ row.meat }}" readonly disabled>
+            <input type="hidden" name="meat" value="{{ row.meat.id }}">
           </div>
           <div class="row">
-            <div class="col-md-6 mb-3">
+             <div class="col-md-6 mb-3">
               <label class="form-label">Harakat turi</label>
-              <input type="text" class="form-control" value="{{ row.action_type }}" disabled>
+              <input type="text" class="form-control" value="{{ row.action_type }}" readonly disabled>
+              <input type="hidden" name="action_type" value="{{ row.action_type }}">
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label">Miqdor</label>
@@ -180,31 +211,33 @@
           <div class="row">
             <div class="col-md-6 mb-3">
               <label class="form-label">Birlik</label>
-              <input type="text" class="form-control" value="{{ row.quantity_unit }}" disabled>
+              <input type="text" class="form-control" value="{{ row.quantity_unit }}" readonly disabled>
+              <input type="hidden" name="quantity_unit" value="{{ row.quantity_unit }}">
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label">Sana</label>
-              <input type="datetime-local" name="operation_date" class="form-control" value="{{ row.operation_date|date:'Y-m-d\\TH:i' }}">
+              <input type="date" name="operation_date" class="form-control"
+                     value="{{ row.operation_date|date:'Y-m-d' }}">
             </div>
           </div>
+          <div class="mb-3">
+            <label class="form-label">Qayerdan</label>
+            <input type="text" name="from_where" class="form-control" value="{{ row.from_where }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Qayerga</label>
+            <input type="text" name="to_where" class="form-control" value="{{ row.to_where }}">
+          </div>
+
+          <!-- faqat ko‘rsatish uchun -->
           <div class="row">
             <div class="col-md-6 mb-3">
               <label class="form-label">Kirish narxi</label>
-              <input type="number" step="0.01" name="in_price" class="form-control" value="{{ row.in_price }}">
+              <input type="text" class="form-control" value="{{ row.meat.meat_in_price|floatformat:2 }}" disabled>
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label">Sotish narxi</label>
-              <input type="number" step="0.01" name="sell_price" class="form-control" value="{{ row.sell_price }}">
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Umumiy kirim</label>
-              <input type="number" step="0.01" name="total_in_price" class="form-control" value="{{ row.total_in_price }}">
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Umumiy sotuv</label>
-              <input type="number" step="0.01" name="total_sell_price" class="form-control" value="{{ row.total_sell_price }}">
+              <input type="text" class="form-control" value="{{ row.meat.meat_sell_price|floatformat:2 }}" disabled>
             </div>
           </div>
         </div>
@@ -217,6 +250,7 @@
   </div>
 </div>
 {% endfor %}
+
 
 {% endblock %}
 

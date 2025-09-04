@@ -94,7 +94,7 @@ def home(request):
     end_date = request.GET.get("end_date")
 
     # faqat perexod qilinmagan yozuvlar
-    qs = IncomeSale.objects.filter(is_perexod=False).select_related("meat", "create_user").order_by("-operation_date")
+    qs = IncomeSale.objects.filter(is_perexod=False).select_related("meat", "create_user").order_by("-updated_at")
 
     # sana filtri faqat foydalanuvchi tanlasa ishlaydi
     if start_date and end_date:
@@ -119,7 +119,7 @@ def home(request):
     total_sotuv = base_qs.filter(action_type="SOTUV").aggregate(Sum("quantity"))["quantity__sum"] or 0
     total_left_kg = total_kirim - total_sotuv
 
-    print('page_obj:',page_obj)
+        
     context = {
         "page_obj": page_obj,
         "q": q,
@@ -140,14 +140,19 @@ def income_sale_create(request):
             obj = form.save(commit=False)
             obj.create_user = request.user
 
-            # quantity ni kg ga o‘tkazish
             qty = obj.quantity * (1000 if obj.quantity_unit == "TONNA" else 1)
 
-            # narxlarni product dan olish
+            # qoldiqni hisoblash
+            total_kirim = IncomeSale.objects.filter(meat=obj.meat, action_type="KIRIM").aggregate(Sum("quantity"))["quantity__sum"] or 0
+            total_sotuv = IncomeSale.objects.filter(meat=obj.meat, action_type="SOTUV").aggregate(Sum("quantity"))["quantity__sum"] or 0
+            available_qty = total_kirim - total_sotuv
+
+            if obj.action_type == "SOTUV" and qty > available_qty:
+                messages.error(request, f"Omborda yetarli {obj.meat.meat_name}-{obj.meat.meat_code} mahsulot yo‘q. Mavjud: {available_qty} kg")
+                return redirect("home")
+
             obj.in_price = obj.meat.meat_in_price
             obj.sell_price = obj.meat.meat_sell_price
-
-            # umumiy hisob
             obj.total_in_price = qty * obj.in_price
             obj.total_sell_price = qty * obj.sell_price
 
@@ -158,9 +163,11 @@ def income_sale_create(request):
     return redirect("home")
 
 
+
 @login_required
 def income_sale_update(request, pk):
     income_sale = get_object_or_404(IncomeSale, pk=pk)
+
     if income_sale.create_user != request.user and not request.user.is_superuser:
         messages.error(request, "Faqat o‘zingiz yaratgan yozuvni tahrirlay olasiz.")
         return redirect("home")
@@ -171,13 +178,81 @@ def income_sale_update(request, pk):
             obj = form.save(commit=False)
 
             qty = obj.quantity * (1000 if obj.quantity_unit == "TONNA" else 1)
+
+            # qoldiqni hisoblash (update holatida eski yozuvni hisobdan chiqaramiz)
+            total_kirim = IncomeSale.objects.filter(meat=obj.meat, action_type="KIRIM").exclude(id=obj.id).aggregate(Sum("quantity"))["quantity__sum"] or 0
+            total_sotuv = IncomeSale.objects.filter(meat=obj.meat, action_type="SOTUV").exclude(id=obj.id).aggregate(Sum("quantity"))["quantity__sum"] or 0
+            available_qty = total_kirim - total_sotuv
+
+            if obj.action_type == "SOTUV" and qty > available_qty:
+                messages.error(request, f"Omborda yetarli {obj.meat.meat_name}-{obj.meat.meat_code} mahsulot yo‘q. Mavjud: {available_qty} kg")
+                return redirect("home")
+
             obj.in_price = obj.meat.meat_in_price
             obj.sell_price = obj.meat.meat_sell_price
             obj.total_in_price = qty * obj.in_price
             obj.total_sell_price = qty * obj.sell_price
 
             obj.save()
-            messages.success(request, "IncomeSale yangilandi.")
+            messages.success(request, "Kirim/Chiqim yangilandi.")
         else:
-            messages.error(request, "Tahrirlashda xatolik bor.")
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
     return redirect("home")
+
+
+
+
+
+
+
+@login_required
+def stock(request):
+    q = request.GET.get("q", "").strip()
+
+    products = Product.objects.all().order_by("meat_name")
+
+    if q:
+        products = products.filter(Q(meat_name__icontains=q) | Q(meat_code__icontains=q))
+
+    stock_data = []
+    total_left_all = 0
+
+    for p in products:
+        # Kirimni kg ga o‘tkazib yig‘ish
+        total_kirim = 0
+        kirim_records = IncomeSale.objects.filter(meat=p, action_type="KIRIM")
+        for rec in kirim_records:
+            qty = rec.quantity * (1000 if rec.quantity_unit == "TONNA" else 1)
+            total_kirim += qty
+
+        # Sotuvni kg ga o‘tkazib yig‘ish
+        total_sotuv = 0
+        sotuv_records = IncomeSale.objects.filter(meat=p, action_type="SOTUV")
+        for rec in sotuv_records:
+            qty = rec.quantity * (1000 if rec.quantity_unit == "TONNA" else 1)
+            total_sotuv += qty
+
+        # Ombordagi qoldiq (kg)
+        left_qty = total_kirim - total_sotuv
+        total_left_all += left_qty
+
+        stock_data.append({
+            "product": p,
+            "total_kirim": total_kirim,
+            "total_sotuv": total_sotuv,
+            "left_qty": left_qty,
+            "left_ton": left_qty / 1000,  # 🔥 qoldiqni tonnada ko‘rsatamiz
+        })
+
+    paginator = Paginator(stock_data, 20)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "stock.html", {
+        "page_obj": page_obj,
+        "q": q,
+        "total_left_all": total_left_all,
+        "total_left_all_ton": total_left_all / 1000,
+    })

@@ -8,6 +8,7 @@
   <link rel="icon" href="{% static 'images/logo.jpg' %}" type="image/png">
   <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'fontawesome/css/all.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/custom.css' %}">
   {% block extra_css %}{% endblock extra_css %}
 <style>
   html, body {
@@ -53,9 +54,14 @@
             <i class="fa-solid fa-box-open me-1"></i> Mahsulotlar
             </a>
         </li>
-        <li class="nav-item">
+        {% comment %} <li class="nav-item">
             <a class="nav-link{% if request.resolver_match.url_name == 'history' %} active{% endif %}" href="{% url 'history' %}">
             <i class="fa-solid fa-clock-rotate-left me-1"></i> Istoriya
+            </a>
+        </li> {% endcomment %}
+        <li class="nav-item">
+            <a class="nav-link{% if request.resolver_match.url_name == 'stock' %} active{% endif %}" href="{% url 'stock' %}">
+            <i class="fa-solid fa-layer-group  me-1"></i> Omborxona
             </a>
         </li>
         </ul>
@@ -63,7 +69,12 @@
         
         <ul class="navbar-nav">
             <li class="nav-item">
-              <span class="navbar-text me-3"><i class="fa-solid fa-user"></i> {{ user.get_username }}</span>
+              <span class="navbar-text me-3">
+                <i class="fa-solid fa-user"></i> {{ user.get_username }}
+                {% if user.first_name or user.last_name %}
+                  ({{ user.last_name }} {{ user.first_name }})
+                {% endif %}
+              </span>
             </li>
             <li class="nav-item">
               <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}?next={{ request.get_full_path|urlencode }}">Chiqish</a>

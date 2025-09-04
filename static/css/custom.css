@@ -1,0 +1,23 @@
+.tiny-scrollbar {
+  scrollbar-width: thin;           /* Firefox */
+  scrollbar-color: #888 #f1f1f1;   /* Firefox */
+}
+
+/* Chrome, Edge, Safari */
+.tiny-scrollbar::-webkit-scrollbar {
+  width: 6px;   /* scroll kengligi */
+  height: 6px;  /* gorizontal scroll uchun */
+}
+
+.tiny-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.tiny-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 3px;
+}
+
+.tiny-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #555;
+}
